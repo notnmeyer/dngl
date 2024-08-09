@@ -1,0 +1,49 @@
+[tasks.deps]
+cmds = ["go mod tidy"]
+
+[tasks."api:run"]
+deps = [
+  ["deps"],
+  ["docker:deps:up"],
+]
+cmds = [
+  "go run cmd/dngl-api/dngl-api.go"
+]
+
+[tasks."cli:run"]
+deps = [
+  ["deps"],
+]
+cmds = ["go run cmd/dngl/dngl.go {{.CLI_ARGS}}"]
+
+[tasks."docker:deps:up"]
+cmds = ["docker compose up -d redis"]
+
+[tasks."docker:build"]
+cmds = ["docker compose build dngl-api"]
+
+[tasks."docker:up"]
+cmds = ["docker compose up {{.CLI_ARGS}}"]
+
+[tasks."docker:down"]
+cmds = ["docker compose down"]
+
+[tasks.cobra]
+dir = "cmd/dngl"
+cmds = ["cobra-cli {{.CLI_ARGS}}"]
+
+[tasks.clean]
+cmds = [
+  "echo -n cleaning up...",
+  "rm -rf dist",
+  "echo done!",
+]
+
+[tasks.build]
+deps = [["clean"]]
+cmds = [
+  "echo -n building... ",
+  "go build -o dist/ ./...",
+  "echo done!",
+  "ls -l dist/dngl*",
+]

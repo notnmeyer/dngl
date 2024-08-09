@@ -1,0 +1,9 @@
+services:
+  dngl-api:
+    image: docker.io/notnmeyer/dngl-api
+    build: .
+    ports: ["8080:8080"]
+    env_file: .compose.env
+  redis:
+    image: redis
+    ports: ["6379:6379"]
