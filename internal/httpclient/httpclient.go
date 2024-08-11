@@ -32,7 +32,9 @@ func NewRequest(verb, path string, data *string) ([]byte, error) {
 			return nil, err
 		}
 		req, err = http.NewRequest(verb, reqPath, bytes.NewBuffer(jsonInput))
-
+		if err != nil {
+			return nil, err
+		}
 		req.Header.Set("Content-Type", "application/json")
 	}
 
