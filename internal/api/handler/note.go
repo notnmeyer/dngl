@@ -25,7 +25,7 @@ func CreateNote(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	err = json.NewEncoder(w).Encode(note.CreateNoteResponse{
-		ID: n.ID.String(),
+		ID: n.ID,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

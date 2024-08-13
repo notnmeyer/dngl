@@ -3,17 +3,27 @@ package db
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/notnmeyer/dngl/internal/envhelper"
 
 	"github.com/redis/go-redis/v9"
 )
 
-var keyName = "notes"
+var defaultExpiry = time.Minute * 15
 var ctx = context.TODO()
+var keyPrefix = "notes:"
 
 type DB struct {
 	client *redis.Client
+}
+
+func key(s string) string {
+	if strings.HasPrefix(s, keyPrefix) {
+		return s
+	}
+	return keyPrefix + s
 }
 
 func New() *DB {
@@ -26,8 +36,8 @@ func New() *DB {
 	}
 }
 
-func (db *DB) Save(field, value string) error {
-	_, err := db.client.HSet(ctx, keyName, field, value).Result()
+func (db *DB) Save(id, value string) error {
+	_, err := db.client.Set(ctx, key(id), value, defaultExpiry).Result()
 	if err != nil {
 		return err
 	}
@@ -35,8 +45,9 @@ func (db *DB) Save(field, value string) error {
 	return nil
 }
 
-func (db *DB) Get(field string) (*string, error) {
-	result, err := db.client.HGet(ctx, keyName, field).Result()
+func (db *DB) Get(id string) (*string, error) {
+	fmt.Println("called Get() with " + id)
+	result, err := db.client.Get(ctx, key(id)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -44,24 +55,25 @@ func (db *DB) Get(field string) (*string, error) {
 	return &result, nil
 }
 
-func (db *DB) Delete(field string) error {
-	delCount, err := db.client.HDel(ctx, keyName, field).Result()
+func (db *DB) Delete(id string) error {
+	delCount, err := db.client.Del(ctx, key(id)).Result()
 	if err != nil {
 		return err
 	}
 
 	if delCount == 0 {
-		return fmt.Errorf("no fields matching '%s' found", field)
+		return fmt.Errorf("no record matching '%s' found", key(id))
 	}
 
 	return nil
 }
 
-func (db *DB) GetAll() (map[string]string, error) {
-	result, err := db.client.HGetAll(ctx, keyName).Result()
+func (db *DB) GetAll() ([]string, error) {
+	// glob := keyPrefix + "*"
+	keys, _, err := db.client.Scan(ctx, 0, "notes:*", 100).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return keys, nil
 }

@@ -2,6 +2,7 @@ package note
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/notnmeyer/dngl/internal/db"
@@ -10,8 +11,8 @@ import (
 )
 
 type Note struct {
-	ID      uuid.UUID `json:"id"`
-	Content string    `json:"content"`
+	ID      string `json:"id"`
+	Content string `json:"content"`
 }
 
 type CreateNoteResponse struct {
@@ -32,14 +33,14 @@ func New(body *io.ReadCloser) (*Note, error) {
 		return nil, err
 	}
 
-	n.ID = uuid.New()
+	n.ID = uuid.New().String()
 
 	return &n, nil
 }
 
 func (n *Note) Save() error {
 	client := db.New()
-	if err := client.Save(n.ID.String(), n.Content); err != nil {
+	if err := client.Save(n.ID, n.Content); err != nil {
 		return err
 	}
 
@@ -53,13 +54,8 @@ func Get(id string) (*Note, error) {
 		return nil, err
 	}
 
-	parsedID, err := uuid.Parse(id)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Note{
-		ID:      parsedID,
+		ID:      id,
 		Content: *content,
 	}, nil
 }
@@ -81,15 +77,14 @@ func List() ([]*Note, error) {
 	}
 
 	var notes []*Note
-	for k, v := range result {
-		parsedID, err := uuid.Parse(k)
+	for _, id := range result {
+		n, err := Get(id)
 		if err != nil {
+			fmt.Printf("error getting id %s: %s\n", id, err.Error())
 			continue
 		}
-		notes = append(notes, &Note{
-			ID:      parsedID,
-			Content: v,
-		})
+		fmt.Printf("%+v", n.Content)
+		notes = append(notes, n)
 	}
 
 	return notes, err
